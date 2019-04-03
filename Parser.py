@@ -65,16 +65,24 @@ class CoolParser(Parser):
     def l_feature(self, p):
         pass
 
-    @_('l_feature feature ";"')
-    def l_feature(self, p):
-        pass
-
-    @_('OBJECTID "(" formal "," l_formal ")" ":" TYPEID "{" expr "}" ')
+    @_('OBJECTID "(" formal l_formal ")" ":" TYPEID "{" expr "}" ')
     def feature(self, p):
         pass
 
     @_('OBJECTID ":" TYPEID inicializador ')
     def feature(self, p):
+        pass
+
+    @_('empty')
+    def l_formal(self,p):
+        pass
+
+    @_('l_formal "," formal')
+    def l_formal(self,p):
+        pass
+
+    @_('OBJECTID ":" TYPEID')
+    def formal(self,p):
         pass
 
     @_('ASSIGN expr')
@@ -85,16 +93,31 @@ class CoolParser(Parser):
     def empty(self, p):
         pass
 
+    @_('empty')
+    def l_expr(self,p):
+        pass
+
+    @_('l_expr "," expr ";"')
+    def l_expr(self,p):
+        pass
 
     @_('OBJECTID ASSIGN expr')
     def expr(self, p):
         pass
     
-    @_('expr "@" TYPEID "." OBJECTID "(" expr "," l_expr ")" ') #TODO
+    @_('expr opcional "." OBJECTID "(" expr l_expr ")" ')
     def expr(self, p):
         pass
 
-    @_('ID( [ expr [[,expr]]∗ ] ') #TODO
+    @_('empty')
+    def opcional(self,p):
+        pass
+    
+    @_('"@" TYPEID')
+    def opcional(self,p):
+        pass
+
+    @_('OBJECTID "(" expr l_expr ")"')
     def expr(self, p):
         pass
 
@@ -106,15 +129,31 @@ class CoolParser(Parser):
     def expr(self, p):
         pass
 
-    @_('{ [[expr;]]+}') #TODO
+    @_('"{" expr l_expr "}"')
     def expr(self, p):
         pass
 
-    @_(' let ID : TYPE [ <- expr ] [[,ID : TYPE [ <- expr ]]]∗ in expr ') #TODO
+    @_(' LET OBJECTID ":" TYPEID opcional3 opcional4 IN expr ') #TODO
     def expr(self, p):
         pass
 
-    @_(' case expr of [[ID : TYPE => expr;]]+esac ') #TODO
+    @_('empty')
+    def opcional3(self,p):
+        pass
+
+    @_('ASSIGN expr')
+    def opcional3(self,p):
+        pass
+
+    @_('empty')
+    def opcional4(self,p):
+        pass
+
+    @_('opcional4 "," OBJECTID ":" TYPEID opcional3')
+    def opcional4(self,p):
+        pass
+
+    @_('case expr of opcional2 esac ')
     def expr(self, p):
         pass
 
@@ -174,12 +213,17 @@ class CoolParser(Parser):
     def expr(self, p):
         pass
 
-    @_('TRUE')
+    @_('BOOL_CONST')
     def expr(self, p):
+        
+
+    @_('OBJECTID  ";" TYPEID DARROW expr')
+    def opcional2(self, p):
         pass
 
-    @_('FALSE')
-    def expr(self, p):
+    @_('opcional2 OBJECTID  ";" TYPEID DARROW expr ";"')
+    def opcional2(self, p):
         pass
+
 
     
