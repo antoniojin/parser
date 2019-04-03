@@ -153,7 +153,7 @@ class CoolParser(Parser):
     def opcional4(self,p):
         pass
 
-    @_('case expr of opcional2 esac ')
+    @_('CASE expr of opcional2 ESAC ')
     def expr(self, p):
         pass
 
@@ -215,7 +215,6 @@ class CoolParser(Parser):
 
     @_('BOOL_CONST')
     def expr(self, p):
-        
 
     @_('OBJECTID  ";" TYPEID DARROW expr')
     def opcional2(self, p):
