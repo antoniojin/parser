@@ -4,8 +4,9 @@ from Lexer import CoolLexer
 from sly import Parser
 import sys
 import os
+from Clases import *
 DIRECTORIO = os.path.join("C:/Users/anton/Desktop/LenguajesProgramacion/practica2/")
-
+DIRECTORIO = os.path.join("C:/Users/USUARIO/Parse/parser/")
 
 sys.path.append(DIRECTORIO)
 
@@ -24,13 +25,14 @@ class CoolParser(Parser):
     precedence = (
         ('right', 'ASSIGN'),
         ('right', 'NOT'),
-        ('nonassoc', 'LESSEQUAL', 'LESS', 'EQUAL'),
+        ('nonassoc', 'LE','<','='),
         ('left', '+', '-'),
         ('left', '*', '/'),
         ('right', 'ISVOID'),
-        ('right', 'INT_COMPLEMENT'),
+        #('right', 'INT_COMPLEMENT'),
         ('left', '@'),
         ('left', '.'),
+        ('right', '~')
     )
 
     @_('l_class')
@@ -153,7 +155,7 @@ class CoolParser(Parser):
     def opcional4(self,p):
         pass
 
-    @_('CASE expr of opcional2 ESAC ')
+    @_('CASE expr OF opcional2 ESAC ')
     def expr(self, p):
         pass
 
@@ -167,19 +169,23 @@ class CoolParser(Parser):
 
     @_('expr "+" expr')
     def expr(self, p):
-        pass
+        return Suma(p.lineno,p.expr0,p.expr1)
 
     @_('expr "-" expr')
     def expr(self, p):
-        pass
+        return Resta(p.lineno,p.expr0,p.expr1)
 
     @_('expr "*" expr')
     def expr(self, p):
-        pass
+        return Multiplicacion(p.lineno,p.expr0,p.expr1)
+
+    @_('expr "<" expr')
+    def expr(self, p):
+        return Menor(p.lineno,p.expr0,p.expr1)
 
     @_('expr "/" expr')
     def expr(self, p):
-        pass
+        return Division(p.lineno,p.expr0,p.expr1)
 
     @_('"~" expr')
     def expr(self, p):
@@ -191,11 +197,11 @@ class CoolParser(Parser):
 
     @_('expr "=" expr')
     def expr(self, p):
-        pass
+        return Asignacion(p.lineno,p.expr0,p.expr1)
 
     @_('NOT expr')
     def expr(self, p):
-        pass
+        return Booleano(p.expr.lineo,p.expr.value)
 
     @_('"(" expr ")"')
     def expr(self, p):
@@ -203,18 +209,19 @@ class CoolParser(Parser):
 
     @_('OBJECTID')
     def expr(self, p):
-        pass
+        return Objeto(p.OBJECTID.lineo,p.OBJECTID.value)
 
     @_('INT_CONST')
     def expr(self, p):
-        pass
+        return Entero(p.INT_CONST.lineo,p.INT_CONST.value)
 
     @_('STR_CONST')
     def expr(self, p):
-        pass
+        return String(p.STR_CONST.lineo,p.STR_CONST.value)
 
     @_('BOOL_CONST')
     def expr(self, p):
+        return Booleano(p.BOOL_CONST.lineo,p.BOOL_CONST.value)
 
     @_('OBJECTID  ";" TYPEID DARROW expr')
     def opcional2(self, p):
