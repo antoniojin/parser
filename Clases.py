@@ -389,7 +389,13 @@ class Programa(IterableNodo):
         resultado = super().str(n)
         resultado += f'{" "*n}_program\n'
         resultado += ''.join([c.str(n+2) for c in self.secuencia])
-        return resultado
+        if 'syntax error' not in resultado:
+            return resultado
+        else:
+            resultado = resultado.split('\n')
+            resultado =  '\n'.join([c for c in resultado if 'syntax error' in c])
+            resultado += 'Compilation halted due to lex and parse errors\n'
+            return resultado
 
 
 @dataclass
@@ -440,4 +446,22 @@ class Atributo(Caracteristica):
         resultado += f'{(n+2)*" "}{self.nombre}\n'
         resultado += f'{(n+2)*" "}{self.tipo}\n'
         resultado += self.cuerpo.str(n+2)
+        return resultado
+
+
+class ErroresSintacticos_CLE(Clase, Let, Expresion):
+    mensaje_error: str
+
+    def str(self, n):
+        resultado = f'"{self.nombre_fichero}", line {self.linea}: '
+        resultado += f'syntax error at or near {self.mensaje_error}'
+        return resultado
+
+
+class ErroresSintacticos_BC(Clase, Bloque, Caracteristica):
+    mensaje_error: str
+
+    def str(self, n):
+        resultado = f'"{self.nombre_fichero}", line {self.linea}: '
+        resultado += f'syntax error at or near {self.mensaje_error}\n'
         return resultado
