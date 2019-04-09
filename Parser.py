@@ -5,8 +5,8 @@ from sly import Parser
 import sys
 import os
 from Clases import *
-DIRECTORIO = os.path.join("C:/Users/anton/Desktop/LenguajesProgramacion/practica2/")
-DIRECTORIO = os.path.join("C:/Users/USUARIO/Parse/parser/")
+#DIRECTORIO = os.path.join("C:/Users/anton/Desktop/LenguajesProgramacion/practica2/")
+DIRECTORIO = os.path.join("C:/Users/USUARIO/parser/")
 
 sys.path.append(DIRECTORIO)
 
@@ -16,7 +16,6 @@ FICHEROS = os.listdir(GRADING)
 TESTS = [fich for fich in FICHEROS
          if os.path.isfile(os.path.join(GRADING, fich))
          and fich.endswith(".test")]
-
 
 class CoolParser(Parser):
 
@@ -230,6 +229,26 @@ class CoolParser(Parser):
     @_('opcional2 OBJECTID  ";" TYPEID DARROW expr ";"')
     def opcional2(self, p):
         pass
+
+
+
+for fich in TESTS:
+    f = open(os.path.join(GRADING, fich), 'r')
+    g = open(os.path.join(GRADING, fich + '.out'), 'r')
+    lexer = CoolLexer()
+    parser = CoolParser()
+    parser.nombre_fichero = fich
+    bien = ''.join([c for c in g.readlines() if c and '#' not in c])
+    entrada = f.read()
+    j = parser.parse(lexer.tokenize(entrada))
+    if not j:
+        continue
+    resultado = '\n'.join([c for c in j.str(0).split('\n')
+                         if c and '#' not in c])
+    f.close(), g.close()
+    if resultado != bien:
+        print(f"Revisa el fichero {fich}")
+
 
 
     
