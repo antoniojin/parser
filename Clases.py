@@ -233,7 +233,7 @@ class Division(OperacionBinaria):
 
     def str(self, n):
         resultado = super().str(n)
-        resultado += f'{(n)*" "}_div\n'
+        resultado += f'{(n)*" "}_divide\n'
         resultado += self.izquierda.str(n+2)
         resultado += self.derecha.str(n+2)
         resultado += f'{(n)*" "}: _no_type\n'
@@ -394,7 +394,7 @@ class Programa(IterableNodo):
         else:
             resultado = resultado.split('\n')
             resultado =  '\n'.join([c for c in resultado if 'syntax error' in c])
-            resultado += 'Compilation halted due to lex and parse errors\n'
+            resultado += '\n Compilation halted due to lex and parse errors\n'
             return resultado
 
 
@@ -432,8 +432,8 @@ class Metodo(Caracteristica):
         resultado = super().str(n)
         resultado += f'{(n)*" "}_method\n'
         resultado += f'{(n+2)*" "}{self.nombre}\n'
-        resultado += f'{(n+2)*" "}{self.tipo}\n'
         resultado += ''.join([c.str(n+2) for c in self.formales])
+        resultado += f'{(n+2)*" "}{self.tipo}\n'
         resultado += self.cuerpo.str(n+2)
         return resultado
 
@@ -448,18 +448,20 @@ class Atributo(Caracteristica):
         resultado += self.cuerpo.str(n+2)
         return resultado
 
-
-class ErroresSintacticos_CLE(Clase, Let, Expresion):
-    mensaje_error: str
-
+@dataclass
+class ErroresSintacticos_CLE(Nodo):
+    mensaje_error: str=""
+    nombre_fichero: str =""
     def str(self, n):
         resultado = f'"{self.nombre_fichero}", line {self.linea}: '
-        resultado += f'syntax error at or near {self.mensaje_error}'
+        resultado += f'syntax error at or near {self.mensaje_error}\n'
         return resultado
 
-
-class ErroresSintacticos_BC(Clase, Bloque, Caracteristica):
-    mensaje_error: str
+@dataclass
+class ErroresSintacticos_BC(Nodo):
+    mensaje_error: str =""
+    nombre_fichero: str = ""
+    
 
     def str(self, n):
         resultado = f'"{self.nombre_fichero}", line {self.linea}: '

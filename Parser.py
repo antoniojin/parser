@@ -16,19 +16,18 @@ FICHEROS = os.listdir(GRADING)
 TESTS = [fich for fich in FICHEROS
          if os.path.isfile(os.path.join(GRADING, fich))
          and fich.endswith(".test")]
-
 class CoolParser(Parser):
 
     tokens = CoolLexer.tokens
 
     precedence = (
+        ('right', 'IN'),
         ('right', 'ASSIGN'),
         ('right', 'NOT'),
         ('nonassoc', 'LE','<','='),
         ('left', '+', '-'),
         ('left', '*', '/'),
         ('right', 'ISVOID'),
-        #('right', 'INT_COMPLEMENT'),
         ('left', '@'),
         ('left', '.'),
         ('right', '~')
@@ -66,9 +65,9 @@ class CoolParser(Parser):
     def l_feature(self, p):
         return p.l_feature + [p.feature]
 
-    @_('OBJECTID "(" formal l_formal ")" ":" TYPEID "{" expr "}" ')
+    @_('OBJECTID "(" l_formal ")" ":" TYPEID "{" expr "}" ')
     def feature(self, p):
-        return Metodo(p.lineno,p.OBJECTID,p.TYPEID,p.expr,p.l_formal+[p.formal])
+        return Metodo(p.lineno,p.OBJECTID,p.TYPEID,p.expr, p.l_formal)
 
     @_('OBJECTID ":" TYPEID inicializador')
     def feature(self, p):
@@ -102,7 +101,7 @@ class CoolParser(Parser):
     def l_expr(self,p):
         return []
 
-    @_('l_expr "," expr ";"')
+    @_('l_expr "," expr')
     def l_expr(self,p):
         return p.l_expr + [p.expr]
 
@@ -110,64 +109,56 @@ class CoolParser(Parser):
     def expr(self, p):
         return Asignacion(p.lineno, p.OBJECTID, p.expr)
     
-    @_('expr opcional "." OBJECTID "(" expr l_expr ")" ')
+    @_('expr "." OBJECTID "(" expr "," l_expr ")" ')
     def expr(self, p):
-        if opcional == '':
-            return LlamadaMetodo(p.lineno, p.expr, p.OBJECTID, p.l_expr+[p.expr])
-        else:
-            return LlamadaMetodoEstatico(p.lineno, p.expr, p.TYPEID, p.OBJECTID, p.l_expr+[p.expr])
-
-    @_('empty')
-    def opcional(self,p):
-        return ''
+            return LlamadaMetodo(p.lineno, p.expr0, p.OBJECTID, p.l_expr+[p.expr1])
     
-    @_('"@" TYPEID')
-    def opcional(self,p):
-        return p.TYPEID
-
-    @_('OBJECTID "(" expr l_expr ")"')
+    @_('expr "@" TYPEID "." OBJECTID "(" expr "," l_expr ")" ')
     def expr(self, p):
-        pass
+            return LlamadaMetodoEstatico(p.lineno, p.expr0, p.TYPEID, p.OBJECTID, p.l_expr+[p.expr1])
+
+    @_('OBJECTID "(" expr "," l_expr ")"')
+    def expr(self, p):
+        return LlamadaMetodo(p.lineno,p.expr,p.OBJECTID, p.l_expr+[p.expr])
 
     @_('IF expr THEN expr ELSE expr FI')
     def expr(self, p):
-        return Condicional(p.expr0,p.expr1,p.expr2)
+        return Condicional(p.lineno,p.expr0,p.expr1,p.expr2)
 
     @_('WHILE expr LOOP expr POOL')
     def expr(self, p):
-        return Bucle(p.expr0,p.expr1)
+        return Bucle(p.lineno,p.expr0,p.expr1)
 
-    @_('"{" expr l_expr "}"')
+    @_('"{" expr "," l_expr "}"')
     def expr(self, p):
-        return l_expr + {expr}
+        return p.l_expr + [p.expr]
 
-    @_(' LET OBJECTID ":" TYPEID opcional3 opcional4 IN expr ') #TODO
+    @_('LET l_decl IN expr ')
     def expr(self, p):
-        pass
+        lets = p.expr
+        for i in reversed(p.l_decl):
+            lets = Let(p.expr.linea, *i, lets)
+        return lets
 
-    @_('empty')
-    def opcional3(self,p):
-        pass
+    @_('decl')
+    def l_decl(self,p):
+        return [p.decl]
 
-    @_('ASSIGN expr')
-    def opcional3(self,p):
-        return p.expr
+    @_('decl l_decl')
+    def l_decl(self,p):
+        return p.l_decl + [p.decl]
 
-    @_('empty')
-    def opcional4(self,p):
-        pass
-
-    @_('opcional4 "," OBJECTID ":" TYPEID opcional3')
-    def opcional4(self,p):
-        pass
+    @_('',' OBJECTID ":" TYPEID inicializador')
+    def decl(self,p):
+        return (p.OBJECTID,p.TYPEID,p.inicializador)
 
     @_('CASE expr OF opcional2 ESAC ')
     def expr(self, p):
-        Swicht(p.ESAC[-1].linea,p.expr,p.opcional2)
+        return Swicht(p.ESAC[-1].linea,p.expr,p.opcional2)
 
     @_('NEW TYPEID')
     def expr(self, p):
-        return Nuevo(p.lineno,p.TYPEID)
+        return Nueva(p.lineno,p.TYPEID)
 
     @_('ISVOID expr')
     def expr(self, p):
@@ -207,7 +198,7 @@ class CoolParser(Parser):
 
     @_('NOT expr')
     def expr(self, p):
-        return Booleano(p.expr.linea,p.expr.value)
+        return Not(p.lineno,p.expr)
 
     @_('"(" expr ")"')
     def expr(self, p):
@@ -229,16 +220,17 @@ class CoolParser(Parser):
     def expr(self, p):
         return Booleano(p.lineno,p.BOOL_CONST)
 
-    @_('OBJECTID  ";" TYPEID DARROW expr')
+    @_('OBJECTID  ":" TYPEID DARROW expr')
     def opcional2(self, p):
-        pass
+        return RamaCase(p.lineno,p.OBJECTID,p.TYPEID,p.expr)
 
-    @_('opcional2 OBJECTID  ";" TYPEID DARROW expr ";"')
+    @_('opcional2 OBJECTID  ":" TYPEID DARROW expr ";"')
     def opcional2(self, p):
-        pass
+        return RamaCase(p.lineno,p.OBJECTID,p.TYPEID,p.expr)
+        
     @_('error ";"')
     def expr(self, p):
-        return ErroresSintacticos_CLE(p.lineno,'','','Error')
+        return ErroresSintacticos_CLE(p.lineno,'Error',self.nombre_fichero)
     def error(self, p):
         pass
 
@@ -256,7 +248,7 @@ for fich in TESTS:
     resultado = '\n'.join([c for c in j.str(0).split('\n')
                          if c and '#' not in c])
     f.close(), g.close()
-    if resultado != bien:
+    if resultado.lower().strip().split() != bien.lower().strip().split():
         print(f"Revisa el fichero {fich}")
 
 
