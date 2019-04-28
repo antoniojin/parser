@@ -236,12 +236,11 @@ class CoolParser(Parser):
     @_('ramacase OBJECTID  ":" TYPEID DARROW expr ";"')
     def ramacase(self, p):
         return RamaCase(p.lineno,p.OBJECTID,p.TYPEID,p.expr)          
+    @_('error ";"')
+    def expr(self, p):
+        return ErroresSintacticos_CLE(p.lineno,'Error',self.nombre_fichero)
     def error(self, p):
-        if False:
-            if p != None:
-                print("error "+fich+ " con "+p.value+" en linea "+str(p.lineno))
-            else:
-                print("Error NONE en "+fich)
+        pass
 
 for fich in TESTS:
     f = open(os.path.join(GRADING, fich), 'r')
@@ -257,8 +256,6 @@ for fich in TESTS:
     resultado = '\n'.join([c for c in j.str(0).split('\n')
                          if c and '#' not in c])
     f.close(), g.close()
-    if resultado.lower().strip().split() == bien.lower().strip().split():
-        print(f"Pasa el fichero {fich}")
     if resultado.lower().strip().split() != bien.lower().strip().split():
         print(bien)
         print(resultado) 
