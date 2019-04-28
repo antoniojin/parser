@@ -246,7 +246,7 @@ class Menor(OperacionBinaria):
 
     def str(self, n):
         resultado = super().str(n)
-        resultado += f'{(n)*" "}_le\n'
+        resultado += f'{(n)*" "}_lt\n'
         resultado += self.izquierda.str(n+2)
         resultado += self.derecha.str(n+2)
         resultado += f'{(n)*" "}: _no_type\n'
