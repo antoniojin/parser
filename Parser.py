@@ -16,12 +16,16 @@ FICHEROS = os.listdir(GRADING)
 TESTS = [fich for fich in FICHEROS
          if os.path.isfile(os.path.join(GRADING, fich))
          and fich.endswith(".test")]
+
 class CoolParser(Parser):
-
+    nombre_fichero = "Salida"
     tokens = CoolLexer.tokens
-
+    debugfile = 'salida.out'
+    errores = []
+    debugfile="debug.txt"
+    tokens = CoolLexer.tokens
     precedence = (
-        ('right', 'IN'),
+        ('left', 'IN','LET'),
         ('right', 'ASSIGN'),
         ('right', 'NOT'),
         ('nonassoc', '<','LE','='),
@@ -48,7 +52,9 @@ class CoolParser(Parser):
     @_('CLASS TYPEID herencia "{" l_feature "}"')
     def clase(self, p):
         return Clase(p.lineno,p.TYPEID,p.herencia,self.nombre_fichero,p.l_feature)
-
+    @_('error "}"')
+    def feature(self, p):
+        return ErroresSintacticos_CLE(0,"'}'",self.nombre_fichero)
     @_('INHERITS TYPEID')
     def herencia(self, p):
         return p.TYPEID
@@ -109,7 +115,14 @@ class CoolParser(Parser):
     @_('"{" expr ";" l_expr "}"')
     def expr(self, p):
         return Bloque(p.lineno, [p.expr] + p.l_expr )
-    
+        
+    @_('"{" error ";" l_expr "}"')
+    def expr(self, p):
+        return Bloque(p.lineno, [p.error] + p.l_expr )
+    @_(' error ";" l_expr')
+    def l_expr(self,p):
+        return  [p.error] + p.l_expr
+
     @_('s_expr "," expr')
     def s_expr(self, p):
         return p.s_expr + [p.expr]
@@ -117,6 +130,10 @@ class CoolParser(Parser):
     @_('expr')
     def s_expr(self, p):
         return [p.expr]
+    
+    @_('empty')
+    def s_expr(self, p):
+        return []
 
     @_('OBJECTID ASSIGN expr')
     def expr(self, p):
@@ -132,7 +149,7 @@ class CoolParser(Parser):
 
     @_('OBJECTID "(" s_expr ")"')
     def expr(self, p):
-        return LlamadaMetodo(p.lineno,p.s_expr[0],p.OBJECTID, p.s_expr)
+        return LlamadaMetodo(p.lineno, Objeto(p.lineno,"self"),p.OBJECTID, p.s_expr)
 
     @_('IF expr THEN expr ELSE expr FI')
     def expr(self, p):
@@ -163,7 +180,7 @@ class CoolParser(Parser):
 
     @_('CASE expr OF ramacase ESAC ')
     def expr(self, p):
-        return Swicht(p.ESAC[-1].linea,p.expr,p.ramacase)
+        return Swicht(p.lineno,p.expr,p.ramacase)
 
     @_('NEW TYPEID')
     def expr(self, p):
@@ -231,35 +248,53 @@ class CoolParser(Parser):
 
     @_('OBJECTID  ":" TYPEID DARROW expr')
     def ramacase(self, p):
-        return RamaCase(p.lineno,p.OBJECTID,p.TYPEID,p.expr)
+        return [RamaCase(p.lineno,p.OBJECTID,p.TYPEID,p.expr)]
 
     @_('ramacase OBJECTID  ":" TYPEID DARROW expr ";"')
     def ramacase(self, p):
-        return RamaCase(p.lineno,p.OBJECTID,p.TYPEID,p.expr)          
-    @_('error ";"')
-    def expr(self, p):
-        return ErroresSintacticos_CLE(p.lineno,'Error',self.nombre_fichero)
+        return [RamaCase(p.lineno,p.OBJECTID,p.TYPEID,p.expr)]          
     def error(self, p):
-        pass
+        if p!= None:
+            temp = f'"{self.nombre_fichero}", line {p.lineno}: syntax error at or near '
+            if p.type in {'IF', 'FI','OF', 'ELSE', 'POOL', 'LOOP', 'LE'}:
+                temp += f'{p.type}'
+            elif p.type in CoolLexer.tokens:
+                temp += f'{p.type} = {p.value}'
+            elif p.type in CoolLexer.literals:
+                temp += f"'{p.type}'"
+        else:
+            temp = '"emptyprogram.test", line 0: syntax error at or near EOF'
+        self.errores.append(temp)
+
 
 for fich in TESTS:
     f = open(os.path.join(GRADING, fich), 'r')
     g = open(os.path.join(GRADING, fich + '.out'), 'r')
     lexer = CoolLexer()
+    lexer1 = CoolLexer()
     parser = CoolParser()
     parser.nombre_fichero = fich
+    parser.errores = []
     bien = ''.join([c for c in g.readlines() if c and '#' not in c])
     entrada = f.read()
     j = parser.parse(lexer.tokenize(entrada))
-    if not j:
-        continue
-    resultado = '\n'.join([c for c in j.str(0).split('\n')
-                         if c and '#' not in c])
+    for t0 in lexer1.tokenize(entrada):
+        pass
+    if j and not parser.errores:
+        resultado = '\n'.join([c for c in j.str(0).split('\n')
+                               if c and '#' not in c])
+    else:
+        resultado = '\n'.join(parser.errores)
+        resultado += '\n' + "Compilation halted due to lex and parse errors"
     f.close(), g.close()
     if resultado.lower().strip().split() != bien.lower().strip().split():
-        print(bien)
-        print(resultado) 
-        print(f"Falla el fichero {fich}")
+        print(f"Revisa el fichero {fich}")
+        f = open(os.path.join(GRADING, fich)+'.nuestro', 'w')
+        g = open(os.path.join(GRADING, fich)+'.bien', 'w')
+        f.write(resultado.strip())
+        g.write(bien.strip())
+        f.close()
+        g.close()
 
 
 
