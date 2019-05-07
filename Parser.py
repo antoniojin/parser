@@ -52,9 +52,7 @@ class CoolParser(Parser):
     @_('CLASS TYPEID herencia "{" l_feature "}"')
     def clase(self, p):
         return Clase(p.lineno,p.TYPEID,p.herencia,self.nombre_fichero,p.l_feature)
-    @_('error "}"')
-    def feature(self, p):
-        return ErroresSintacticos_CLE(0,"'}'",self.nombre_fichero)
+
     @_('INHERITS TYPEID')
     def herencia(self, p):
         return p.TYPEID
@@ -118,18 +116,20 @@ class CoolParser(Parser):
         
     @_('"{" error ";" l_expr "}"')
     def expr(self, p):
-        return Bloque(p.lineno, [p.error] + p.l_expr )
+        return [Nodo(p.lineno)]
+        
     @_(' error ";" l_expr')
     def l_expr(self,p):
-        return  [p.error] + p.l_expr
-
-    @_('s_expr "," expr')
-    def s_expr(self, p):
-        return p.s_expr + [p.expr]
-
+        return  [Nodo(p.lineno)]
     @_('expr')
-    def s_expr(self, p):
+    def lista_argumentos(self, p):
         return [p.expr]
+    @_('lista_argumentos "," expr')
+    def lista_argumentos(self, p):
+        return p.lista_argumentos + [p.expr]
+    @_('lista_argumentos')
+    def s_expr(self, p):
+        return p.lista_argumentos
     
     @_('empty')
     def s_expr(self, p):
@@ -142,15 +142,12 @@ class CoolParser(Parser):
     @_('expr "." OBJECTID "(" s_expr ")" ')
     def expr(self, p):
             return LlamadaMetodo(p.lineno, p.expr, p.OBJECTID, p.s_expr)
-    
     @_('expr "@" TYPEID "." OBJECTID "(" s_expr ")" ')
     def expr(self, p):
             return LlamadaMetodoEstatico(p.lineno, p.expr, p.TYPEID, p.OBJECTID, p.s_expr)
-
     @_('OBJECTID "(" s_expr ")"')
     def expr(self, p):
         return LlamadaMetodo(p.lineno, Objeto(p.lineno,"self"),p.OBJECTID, p.s_expr)
-
     @_('IF expr THEN expr ELSE expr FI')
     def expr(self, p):
         return Condicional(p.lineno,p.expr0,p.expr1,p.expr2)
