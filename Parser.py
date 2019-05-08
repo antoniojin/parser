@@ -64,7 +64,9 @@ class CoolParser(Parser):
     @_('empty')
     def l_feature(self, p):
         return []
-
+    @_('error ";"')
+    def l_feature(self, p):
+        return []
     @_('l_feature feature ";"')
     def l_feature(self, p):
         return p.l_feature + [p.feature]
@@ -72,7 +74,9 @@ class CoolParser(Parser):
     @_('OBJECTID "(" l_formal ")" ":" TYPEID "{" expr "}" ')
     def feature(self, p):
         return Metodo(p.lineno,p.OBJECTID,p.TYPEID,p.expr, p.l_formal)
-
+    @_('OBJECTID "(" l_formal ")" ":" TYPEID "{" error "}" ')
+    def feature(self, p):
+        return Nodo(p.lineno)
     @_('OBJECTID ":" TYPEID inicializador')
     def feature(self, p):
         return Atributo(p.lineno,p.OBJECTID,p.TYPEID,p.inicializador)
@@ -85,6 +89,9 @@ class CoolParser(Parser):
     @_('l_formal "," formal')
     def l_formal(self,p):
         return p.l_formal + [p.formal]
+    @_('error ";" formal')
+    def l_formal(self,p):
+        return [Nodo(p.lineno)]
 
     @_('OBJECTID ":" TYPEID')
     def formal(self,p):
@@ -117,10 +124,10 @@ class CoolParser(Parser):
     @_('"{" error ";" l_expr "}"')
     def expr(self, p):
         return [Nodo(p.lineno)]
-        
     @_(' error ";" l_expr')
     def l_expr(self,p):
         return  [Nodo(p.lineno)]
+
     @_('expr')
     def lista_argumentos(self, p):
         return [p.expr]
@@ -167,17 +174,22 @@ class CoolParser(Parser):
     def l_decl(self,p):
         return [p.decl]
 
-    @_('decl l_decl')
+    @_('error "," decl')
     def l_decl(self,p):
-        return  [p.decl] + p.l_decl
+        return [Nodo(p.lineno)]
 
-    @_('',' OBJECTID ":" TYPEID inicializador')
+    @_('l_decl "," decl')
+    def l_decl(self,p):
+        return   p.l_decl + [p.decl] 
+
+
+    @_('OBJECTID ":" TYPEID inicializador')
     def decl(self,p):
         return (p.OBJECTID,p.TYPEID,p.inicializador)
 
-    @_('CASE expr OF ramacase ESAC ')
+    @_('CASE expr OF l_ramacase ESAC ')
     def expr(self, p):
-        return Swicht(p.lineno,p.expr,p.ramacase)
+        return Swicht(p.lineno,p.expr,p.l_ramacase)
 
     @_('NEW TYPEID')
     def expr(self, p):
@@ -243,13 +255,15 @@ class CoolParser(Parser):
     def expr(self, p):
         return Booleano(p.lineno,p.BOOL_CONST)
 
-    @_('OBJECTID  ":" TYPEID DARROW expr')
+    @_('OBJECTID  ":" TYPEID DARROW expr ";"')
     def ramacase(self, p):
-        return [RamaCase(p.lineno,p.OBJECTID,p.TYPEID,p.expr)]
-
-    @_('ramacase OBJECTID  ":" TYPEID DARROW expr ";"')
-    def ramacase(self, p):
-        return [RamaCase(p.lineno,p.OBJECTID,p.TYPEID,p.expr)]          
+        return RamaCase(p.lineno,p.OBJECTID,p.TYPEID,p.expr)
+    @_('ramacase')
+    def l_ramacase(self, p):
+        return [p.ramacase]     
+    @_(' l_ramacase ramacase')
+    def l_ramacase(self, p):
+        return p.l_ramacase + [p.ramacase]          
     def error(self, p):
         if p!= None:
             temp = f'"{self.nombre_fichero}", line {p.lineno}: syntax error at or near '

@@ -152,7 +152,7 @@ class RamaCase(Nodo):
         resultado += f'{(n+2)*" "}{self.nombre_variable}\n'
         resultado += f'{(n+2)*" "}{self.tipo}\n'
         resultado += self.cuerpo.str(n+2)
-        resultado += f'{(n)*" "}: _no_type\n'
+        #resultado += f'{(n)*" "}: _no_type\n'
         return resultado
 
 
